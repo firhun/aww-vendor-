@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Vendor AWW</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #0f172a; line-height: 1.5; padding: 24px; min-height: 100vh; }
+  @media (max-width: 600px) { body { padding: 12px; } }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 18px 24px; border-radius: 14px; margin-bottom: 18px; color: white; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 40px; height: 40px; background: linear-gradient(135deg, #f59e0b, #ef4444); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; }
+  .title { font-size: 17px; font-weight: 700; }
+  .sub { font-size: 12px; color: #cbd5e1; }
+  .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-btn { background: white; color: #1e293b; padding: 8px 14px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; }
+  .nav-btn.primary { background: #f59e0b; color: #1e293b; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 800px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { background: white; border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border-left: 4px solid #cbd5e1; cursor: pointer; transition: transform .1s; }
+  .kpi:hover { transform: translateY(-1px); }
+  .kpi .k-l { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi .k-v { font-size: 28px; font-weight: 800; line-height: 1.2; }
+  .kpi .k-d { font-size: 12px; color: #64748b; }
+  .kpi.blue { border-left-color: #3b82f6; } .kpi.green { border-left-color: #10b981; }
+  .kpi.amber { border-left-color: #f59e0b; } .kpi.red { border-left-color: #ef4444; }
+
+  .alert { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 14px; color: #78350f; }
+  .alert strong { color: #92400e; }
+  .alert.info { background: #eff6ff; border-color: #93c5fd; color: #1e3a8a; }
+  .bar { height: 10px; background: #f1f5f9; border-radius: 6px; overflow: hidden; display: flex; margin-top: 10px; }
+  .bar span { height: 100%; }
+
+  .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px; }
+  .ch-t { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .ch-d { font-size: 13px; color: #64748b; margin-bottom: 14px; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .filters input[type=search] { flex: 1 1 220px; }
+  .filters select { width: auto; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 7px 12px; border: 1px solid #e2e8f0; background: white; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 600; color: #64748b; font-family: inherit; }
+  .chip.active { background: #1e293b; color: white; border-color: #1e293b; }
+
+  input, select, textarea { width: 100%; padding: 11px 13px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 14px; background: white; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+  label { display: block; font-size: 12px; color: #475569; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .v { border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; background: white; }
+  .v.off { opacity: .55; }
+  .v-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .v-name { font-weight: 800; font-size: 15px; word-break: break-word; }
+  .v-barang { font-size: 12px; color: #64748b; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+  .t-atk { background: #dbeafe; color: #1e40af; } .t-fashion { background: #fce7f3; color: #9d174d; } .t-both { background: #ede9fe; color: #5b21b6; }
+  .s-sering { background: #dcfce7; color: #166534; } .s-aktif { background: #e0f2fe; color: #075985; }
+  .s-nganggur { background: #fef3c7; color: #92400e; } .s-baru { background: #fee2e2; color: #991b1b; }
+  .s-off { background: #f1f5f9; color: #475569; }
+  .v-wil { font-size: 12px; color: #475569; font-weight: 600; }
+  .btags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .btag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: #334155; cursor: pointer; border: 1px solid #e2e8f0; }
+  .btag:hover { background: #e2e8f0; }
+  .v-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; background: #f8fafc; border-radius: 8px; padding: 8px; }
+  .v-stats div { text-align: center; }
+  .v-stats b { display: block; font-size: 14px; }
+  .v-stats span { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; }
+  .v-act { display: flex; gap: 6px; margin-top: auto; }
+  .btn-s { flex: 1; white-space: nowrap; padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; text-align: center; text-decoration: none; border: 1px solid #e2e8f0; background: white; color: #1e293b; }
+  .btn-wa { background: #22c55e; color: white; border-color: #22c55e; }
+  .btn-wa.disabled { background: #e2e8f0; color: #94a3b8; border-color: #e2e8f0; pointer-events: none; }
+
+  .unreg { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+  .unreg:last-child { border-bottom: none; }
+  .unreg small { color: #64748b; display: block; }
+
+  .btn { background: #1e293b; color: white; padding: 12px 22px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 14px; }
+  .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .btn.ghost { background: white; color: #1e293b; border: 1px solid #cbd5e1; }
+  .btn.mini { padding: 7px 12px; font-size: 12px; }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
+  .modal-bg.show { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { font-size: 18px; margin-bottom: 16px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+  .m-act { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+  .chk { display: flex; gap: 8px; align-items: center; font-size: 14px; text-transform: none; letter-spacing: 0; font-weight: 600; }
+  .chk input { width: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 6px; font-weight: 700; color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; background: #f8fafc; }
+  td { padding: 10px 6px; border-bottom: 1px solid #f1f5f9; }
+  .right { text-align: right; }
+  .empty { text-align: center; padding: 30px 0; color: #94a3b8; font-style: italic; }
+
+  .toast { position: fixed; bottom: 30px; right: 30px; background: #10b981; color: white; padding: 14px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(20px); transition: all 0.3s; pointer-events: none; z-index: 200; box-shadow: 0 8px 24px rgba(0,0,0,0.2); max-width: 90vw; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.err { background: #ef4444; }
+  .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="brand">
+      <div class="logo">V</div>
+      <div><div class="title">Data Vendor AWW</div><div class="sub" id="sub">Tempat belanja tim barang · terhubung ke Dashboard Gudang</div></div>
+    </div>
+    <div class="nav">
+      <button class="nav-btn primary" onclick="openForm()">+ Tambah Vendor</button>
+      <a href="https://firhun.github.io/dashboard-gudang/" target="_blank" class="nav-btn">📊 Dashboard Gudang</a>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi blue" onclick="setStatus('semua')"><div class="k-l">Total Vendor</div><div class="k-v" id="k-total">-</div><div class="k-d">aktif terdaftar</div></div>
+    <div class="kpi green" onclick="setStatus('dipakai')"><div class="k-l">Dipakai</div><div class="k-v" id="k-dipakai">-</div><div class="k-d" id="k-dipakai-d">dalam periode</div></div>
+    <div class="kpi amber" onclick="setStatus('nganggur')"><div class="k-l">Nganggur</div><div class="k-v" id="k-nganggur">-</div><div class="k-d">pernah, tapi lama tidak</div></div>
+    <div class="kpi red" onclick="setStatus('baru')"><div class="k-l">Belum Pernah</div><div class="k-v" id="k-baru">-</div><div class="k-d">belum ada PO receive</div></div>
+  </div>
+
+  <div id="insight"></div>
+  <div id="unreg-box"></div>
+
+  <div class="card">
+    <div class="ch-t">Daftar Vendor</div>
+    <div class="ch-d">Data belanja dihitung otomatis dari PO yang sudah di-<b>receive</b> anak distribusi di Dashboard Gudang.</div>
+    <div class="filters">
+      <input type="search" id="q" placeholder="🔍 Cari vendor / wilayah / barang...">
+      <select id="f-wil-filter" title="Wilayah"><option value="">📍 Semua wilayah</option></select>
+      <select id="f-brg-filter" title="Jenis barang"><option value="">🏷️ Semua jenis barang</option></select>
+      <select id="periode" title="Periode">
+        <option value="30">30 hari terakhir</option>
+        <option value="60">60 hari terakhir</option>
+        <option value="90">90 hari terakhir</option>
+      </select>
+      <select id="urut" title="Urutkan">
+        <option value="jarang">Paling jarang dipakai dulu</option>
+        <option value="sering">Paling sering dipakai dulu</option>
+        <option value="nama">Nama A–Z</option>
+      </select>
+    </div>
+    <div class="filters">
+      <div class="chips" id="chips-kat">
+        <button class="chip active" data-v="semua">Semua</button>
+        <button class="chip" data-v="ATK">ATK</button>
+        <button class="chip" data-v="Fashion">Fashion</button>
+      </div>
+      <div class="chips" id="chips-status">
+        <button class="chip active" data-v="semua">Semua status</button>
+        <button class="chip" data-v="dipakai">Dipakai</button>
+        <button class="chip" data-v="nganggur">Nganggur</button>
+        <button class="chip" data-v="baru">Belum pernah</button>
+        <button class="chip" data-v="off">Nonaktif</button>
+      </div>
+    </div>
+    <div class="grid" id="list"><div class="empty"><div class="spinner"></div><br>Memuat data vendor...</div></div>
+  </div>
+</div>
+
+<!-- Form tambah / edit vendor -->
+<div class="modal-bg" id="m-form">
+  <div class="modal">
+    <h3 id="f-title">Tambah Vendor</h3>
+    <div class="form-grid">
+      <div class="full"><label>Nama Vendor *</label><input id="f-nama" maxlength="100" placeholder="Contoh: Toko Sinar Jaya"></div>
+      <div><label>Kategori *</label>
+        <select id="f-kat"><option>ATK</option><option>Fashion</option><option>ATK & Fashion</option></select></div>
+      <div><label>No. WhatsApp</label><input id="f-wa" inputmode="tel" maxlength="20" placeholder="0812xxxxxxx"></div>
+      <div><label>Wilayah *</label><input id="f-wilayah" list="dl-wilayah" maxlength="60" placeholder="Contoh: Jakarta" autocomplete="off"><datalist id="dl-wilayah"></datalist></div>
+      <div><label>&nbsp;</label><div style="font-size:11px;color:#64748b;padding-top:6px">Kota/daerah vendor. Pilih yang sudah ada biar seragam.</div></div>
+      <div class="full"><label>Jenis Barang *</label><input id="f-barang" maxlength="300" placeholder="Contoh: gamis brukat, gamis syari, hijab pashmina"><div style="font-size:11px;color:#64748b;margin-top:4px">Pisah pakai koma kalau lebih dari satu.</div></div>
+      <div class="full"><label>Alamat</label><input id="f-alamat" maxlength="200" placeholder="Opsional"></div>
+      <div class="full"><label>Nama lain di PO gudang</label><input id="f-alias" maxlength="300" placeholder="Pisah koma. Contoh: sinar jaya, tk sinar jaya"><div style="font-size:11px;color:#64748b;margin-top:4px">Kalau anak gudang nulis nama vendor ini beda-beda, tulis variasinya di sini biar tetap kehitung.</div></div>
+      <div class="full"><label>Catatan</label><textarea id="f-catatan" rows="2" maxlength="300" placeholder="Contoh: harga lebih murah ambil lusinan, tutup hari Jumat"></textarea></div>
+      <div class="full" id="f-aktif-wrap"><label class="chk"><input type="checkbox" id="f-aktif" checked> Vendor masih aktif</label></div>
+    </div>
+    <div class="m-act">
+      <button class="btn ghost" onclick="closeModal('m-form')">Batal</button>
+      <button class="btn" id="f-save" onclick="saveVendor()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail riwayat PO vendor -->
+<div class="modal-bg" id="m-detail">
+  <div class="modal">
+    <h3 id="d-title">Riwayat Belanja</h3>
+    <div id="d-body"></div>
+    <div class="m-act"><button class="btn ghost" onclick="closeModal('m-detail')">Tutup</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  // ============================================
+  // CONFIG SUPABASE (sama dengan Dashboard Gudang)
+  // ============================================
+  const SUPABASE_URL = 'https://gpvahzvocznsftkreedc.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_Fij0uvdbPkVuMJOm1Sglbg_am-ChLgm';
+  // ============================================
+
+  const DEMO = new URLSearchParams(location.search).has('demo');
+  let supabase = null;
+  let vendors = [], pos = [];
+  let fKat = 'semua', fStatus = 'semua', editId = null;
+
+  // ---------- helper ----------
+  const esc = s => s == null ? '' : String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+  const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const DAY = 86400000;
+  const namaVendor = v => [v.nama, ...String(v.alias || '').split(',')].map(norm).filter(Boolean);
+  const splitBarang = s => String(s || '').split(',').map(x => x.replace(/\s+/g, ' ').trim().toLowerCase()).filter(Boolean);
+  // pakai penulisan wilayah yang sudah ada kalau sama (jakarta = Jakarta)
+  const rapiWilayah = w => { w = String(w || '').replace(/\s+/g, ' ').trim(); if (!w) return ''; const ada = daftarWilayah().find(x => norm(x) === norm(w)); return ada || w.replace(/\b\w/g, c => c.toUpperCase()); };
+  const daftarWilayah = () => [...new Set(vendors.map(v => v.wilayah).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  function isiFilter() {
+    const fw = document.getElementById('f-wil-filter'), fb = document.getElementById('f-brg-filter');
+    const w0 = fw.value, b0 = fb.value;
+    const brg = [...new Set(vendors.flatMap(v => splitBarang(v.barang)))].sort();
+    fw.innerHTML = '<option value="">📍 Semua wilayah</option>' + daftarWilayah().map(w => `<option ${w === w0 ? 'selected' : ''}>${esc(w)}</option>`).join('');
+    fb.innerHTML = '<option value="">🏷️ Semua jenis barang</option>' + brg.map(b => `<option ${b === b0 ? 'selected' : ''}>${esc(b)}</option>`).join('');
+  }
+  function cariVendor(supplier) { const k = norm(supplier); return vendors.find(v => namaVendor(v).includes(k)) || null; }
+  function formatRp(n) {
+    if (!n) return 'Rp 0';
+    if (n >= 1e9) return 'Rp ' + (n/1e9).toFixed(2).replace(/\.?0+$/, '') + ' M';
+    if (n >= 1e6) return 'Rp ' + (n/1e6).toFixed(1).replace(/\.0$/, '') + ' Jt';
+    if (n >= 1e3) return 'Rp ' + Math.round(n/1e3) + ' Rb';
+    return 'Rp ' + Math.round(n);
+  }
+  function fmtTgl(d) {
+    const b = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    d = new Date(d); return `${d.getDate()} ${b[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  function lalu(d) {
+    const h = Math.floor((Date.now() - new Date(d)) / DAY);
+    if (h <= 0) return 'hari ini';
+    if (h === 1) return 'kemarin';
+    return h + ' hr lalu';
+  }
+  function waLink(no) {
+    let d = String(no || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.startsWith('0')) d = '62' + d.slice(1);
+    else if (d.startsWith('8')) d = '62' + d;
+    return 'https://wa.me/' + d;
+  }
+  function showToast(msg, err = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast show' + (err ? ' err' : '');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+  window.closeModal = id => document.getElementById(id).classList.remove('show');
+  document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }));
+
+  // ---------- hitung pemakaian vendor dari PO yang sudah receive ----------
+  function receivedPOs() {
+    return pos.filter(p => p.status === 'received').map(p => ({ ...p, tgl: p.received_at || p.created_at }));
+  }
+  function stats() {
+    const periode = +document.getElementById('periode').value;
+    const batas = Date.now() - periode * DAY;
+    const map = {};
+    for (const v of vendors) map[v.id] = { v, all: [], recent: [], nominal: 0 };
+    const unreg = {};
+    for (const p of receivedPOs()) {
+      const key = norm(p.supplier);
+      const vv = cariVendor(p.supplier);
+      const s = vv ? map[vv.id] : null;
+      if (!s) { (unreg[key] ||= { nama: p.supplier, n: 0, nominal: 0, last: p.tgl }); unreg[key].n++; unreg[key].nominal += p.amount || 0; if (p.tgl > unreg[key].last) unreg[key].last = p.tgl; continue; }
+      s.all.push(p);
+      if (new Date(p.tgl) >= batas) { s.recent.push(p); s.nominal += p.amount || 0; }
+    }
+    for (const s of Object.values(map)) {
+      s.all.sort((a, b) => new Date(b.tgl) - new Date(a.tgl));
+      s.last = s.all[0]?.tgl || null;
+      if (!s.v.aktif) s.status = 'off';
+      else if (s.recent.length >= 3) s.status = 'sering';
+      else if (s.recent.length >= 1) s.status = 'aktif';
+      else if (s.all.length) s.status = 'nganggur';
+      else s.status = 'baru';
+    }
+    return { list: Object.values(map), unreg: Object.values(unreg), periode };
+  }
+
+  const STATUS = {
+    sering: ['s-sering', '🔥 Sering dipakai'], aktif: ['s-aktif', '✓ Dipakai'],
+    nganggur: ['s-nganggur', '💤 Nganggur'], baru: ['s-baru', '🆕 Belum pernah'], off: ['s-off', 'Nonaktif'],
+  };
+  const KAT = { 'ATK': 't-atk', 'Fashion': 't-fashion', 'ATK & Fashion': 't-both' };
+
+  // ---------- tampilan ----------
+  function render() {
+    isiFilter();
+    const { list, unreg, periode } = stats();
+    const aktif = list.filter(s => s.v.aktif);
+    const dipakai = aktif.filter(s => s.status === 'sering' || s.status === 'aktif');
+    document.getElementById('k-total').textContent = aktif.length;
+    document.getElementById('k-dipakai').textContent = dipakai.length;
+    document.getElementById('k-dipakai-d').textContent = periode + ' hari terakhir';
+    document.getElementById('k-nganggur').textContent = aktif.filter(s => s.status === 'nganggur').length;
+    document.getElementById('k-baru').textContent = aktif.filter(s => s.status === 'baru').length;
+
+    // insight: belanja numpuk di vendor itu-itu aja?
+    const total = dipakai.reduce((a, s) => a + s.nominal, 0);
+    const top = [...dipakai].sort((a, b) => b.nominal - a.nominal).slice(0, 3);
+    const topSum = top.reduce((a, s) => a + s.nominal, 0);
+    const colors = ['#ef4444', '#f59e0b', '#3b82f6'];
+    let ins = '';
+    if (total > 0 && aktif.length > 3) {
+      const pct = Math.round(topSum / total * 100);
+      const cls = pct >= 70 ? 'alert' : 'alert info';
+      ins = `<div class="${cls}">
+        ${pct >= 70 ? '⚠️ ' : '📈 '}<strong>${pct}% belanja ${periode} hari terakhir</strong> cuma ke ${top.length} vendor:
+        ${top.map(s => `<b>${esc(s.v.nama)}</b>`).join(', ')}.
+        Baru <b>${dipakai.length} dari ${aktif.length}</b> vendor yang dipakai.
+        ${pct >= 70 ? 'Coba lirik vendor yang nganggur / belum pernah dipakai.' : ''}
+        <div class="bar">${top.map((s, i) => `<span style="width:${s.nominal/total*100}%;background:${colors[i]}" title="${esc(s.v.nama)}"></span>`).join('')}<span style="flex:1;background:#cbd5e1"></span></div>
+      </div>`;
+    } else if (!vendors.length) {
+      ins = `<div class="alert info">👋 Belum ada vendor. Klik <b>+ Tambah Vendor</b> di atas, atau daftarkan supplier yang sudah ada di PO (lihat di bawah).</div>`;
+    }
+    document.getElementById('insight').innerHTML = ins;
+
+    // supplier di PO yang belum terdaftar sebagai vendor
+    const ub = document.getElementById('unreg-box');
+    if (unreg.length) {
+      unreg.sort((a, b) => b.n - a.n);
+      ub.innerHTML = `<div class="card"><div class="ch-t">Supplier di PO yang belum terdaftar (${unreg.length})</div>
+        <div class="ch-d">Nama ini ada di Dashboard Gudang tapi belum ada di Data Vendor. Daftarkan sebagai vendor baru, atau kalau ternyata vendor yang sudah ada tapi beda penulisan, pilih <b>Sama dengan vendor...</b></div>
+        ${unreg.map(u => `<div class="unreg"><div><b>${esc(u.nama)}</b><small>${u.n} PO · ${formatRp(u.nominal)} · terakhir ${lalu(u.last)}</small></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+            ${vendors.length ? `<select class="gabung" data-nama="${esc(u.nama)}" style="width:auto;padding:6px 8px;font-size:12px"><option value="">Sama dengan vendor...</option>${[...vendors].sort((a,b)=>a.nama.localeCompare(b.nama)).map(v => `<option value="${v.id}">${esc(v.nama)}</option>`).join('')}</select>` : ''}
+            <button class="btn mini" data-nama="${esc(u.nama)}">+ Daftarkan baru</button></div></div>`).join('')}</div>`;
+      ub.querySelectorAll('button[data-nama]').forEach(b => b.onclick = () => openForm(null, b.dataset.nama));
+      ub.querySelectorAll('select.gabung').forEach(sel => sel.onchange = () => sel.value && gabung(+sel.value, sel.dataset.nama));
+    } else ub.innerHTML = '';
+
+    // daftar vendor
+    const q = norm(document.getElementById('q').value);
+    const fWil = document.getElementById('f-wil-filter').value, fBrg = document.getElementById('f-brg-filter').value;
+    let rows = list.filter(s => {
+      if (fKat !== 'semua' && !(s.v.kategori === fKat || s.v.kategori === 'ATK & Fashion')) return false;
+      if (fStatus === 'off') { if (s.v.aktif) return false; }
+      else {
+        if (!s.v.aktif) return false;
+        if (fStatus === 'dipakai' && !(s.status === 'sering' || s.status === 'aktif')) return false;
+        if (fStatus === 'nganggur' && s.status !== 'nganggur') return false;
+        if (fStatus === 'baru' && s.status !== 'baru') return false;
+      }
+      if (fWil && s.v.wilayah !== fWil) return false;
+      if (fBrg && !splitBarang(s.v.barang).includes(fBrg)) return false;
+      if (q && !norm([s.v.nama, s.v.alias, s.v.barang, s.v.wilayah].join(' ')).includes(q)) return false;
+      return true;
+    });
+    const urut = document.getElementById('urut').value;
+    const lastT = s => s.last ? new Date(s.last).getTime() : 0;
+    if (urut === 'nama') rows.sort((a, b) => a.v.nama.localeCompare(b.v.nama));
+    else if (urut === 'sering') rows.sort((a, b) => b.recent.length - a.recent.length || b.nominal - a.nominal);
+    else rows.sort((a, b) => a.recent.length - b.recent.length || lastT(a) - lastT(b));
+
+    const el = document.getElementById('list');
+    if (!rows.length) { el.innerHTML = '<div class="empty" style="grid-column:1/-1">Tidak ada vendor yang cocok.</div>'; return; }
+    el.innerHTML = rows.map(s => {
+      const v = s.v, [sc, sl] = STATUS[s.status], wa = waLink(v.no_wa);
+      return `<div class="v ${v.aktif ? '' : 'off'}">
+        <div class="v-top"><div><div class="v-name">${esc(v.nama)}</div><div class="v-wil">📍 ${esc(v.wilayah || 'Wilayah belum diisi')}</div></div></div>
+        <div class="btags">${splitBarang(v.barang).map(b => `<span class="btag" data-brg="${esc(b)}">${esc(b)}</span>`).join('') || '<span class="v-barang">Jenis barang belum diisi</span>'}</div>
+        <div class="tags"><span class="tag ${KAT[v.kategori] || 't-atk'}">${esc(v.kategori)}</span><span class="tag ${sc}">${sl}</span></div>
+        <div class="v-stats">
+          <div><b>${s.recent.length}</b><span>PO ${periode}hr</span></div>
+          <div><b>${formatRp(s.nominal)}</b><span>Belanja</span></div>
+          <div><b>${s.last ? lalu(s.last) : '—'}</b><span>Terakhir</span></div>
+        </div>
+        ${v.catatan ? `<div class="v-barang">📝 ${esc(v.catatan)}</div>` : ''}
+        <div class="v-act">
+          <a class="btn-s btn-wa ${wa ? '' : 'disabled'}" href="${wa || '#'}" target="_blank" rel="noopener">💬 ${wa ? 'WA' : 'No WA'}</a>
+          <button class="btn-s" data-detail="${v.id}">📋 Riwayat</button>
+          <button class="btn-s" data-edit="${v.id}" style="flex:0 0 auto">✏️</button>
+        </div>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('[data-brg]').forEach(t => t.onclick = () => { document.getElementById('f-brg-filter').value = t.dataset.brg; render(); });
+    el.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openForm(+b.dataset.edit));
+    el.querySelectorAll('[data-detail]').forEach(b => b.onclick = () => openDetail(+b.dataset.detail));
+  }
+
+  // ---------- filter ----------
+  function bindChips(id, set) {
+    const box = document.getElementById(id);
+    box.querySelectorAll('.chip').forEach(c => c.onclick = () => {
+      box.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active'); set(c.dataset.v); render();
+    });
+  }
+  bindChips('chips-kat', v => fKat = v);
+  bindChips('chips-status', v => fStatus = v);
+  window.setStatus = v => { document.querySelector(`#chips-status .chip[data-v="${v}"]`).click(); document.getElementById('list').scrollIntoView({ behavior: 'smooth' }); };
+  ['q', 'periode', 'urut', 'f-wil-filter', 'f-brg-filter'].forEach(id => document.getElementById(id).addEventListener('input', render));
+
+  // ---------- form ----------
+  window.openForm = function(id = null, namaAwal = '') {
+    editId = id;
+    const v = id ? vendors.find(x => x.id === id) : null;
+    document.getElementById('f-title').textContent = v ? 'Edit Vendor' : 'Tambah Vendor';
+    document.getElementById('f-nama').value = v ? v.nama : namaAwal;
+    document.getElementById('f-kat').value = v ? v.kategori : 'ATK';
+    document.getElementById('f-wa').value = v?.no_wa || '';
+    document.getElementById('f-barang').value = v?.barang || '';
+    document.getElementById('f-wilayah').value = v?.wilayah || '';
+    document.getElementById('dl-wilayah').innerHTML = daftarWilayah().map(w => `<option value="${esc(w)}"></option>`).join('');
+    document.getElementById('f-alamat').value = v?.alamat || '';
+    document.getElementById('f-catatan').value = v?.catatan || '';
+    document.getElementById('f-alias').value = v?.alias || '';
+    document.getElementById('f-aktif').checked = v ? v.aktif : true;
+    document.getElementById('f-aktif-wrap').style.display = v ? 'block' : 'none';
+    document.getElementById('m-form').classList.add('show');
+    setTimeout(() => document.getElementById('f-nama').focus(), 50);
+  };
+
+  window.saveVendor = async function() {
+    const btn = document.getElementById('f-save');
+    const data = {
+      nama: document.getElementById('f-nama').value.replace(/\s+/g, ' ').trim(),
+      kategori: document.getElementById('f-kat').value,
+      no_wa: document.getElementById('f-wa').value.trim() || null,
+      barang: splitBarang(document.getElementById('f-barang').value).join(', ') || null,
+      wilayah: rapiWilayah(document.getElementById('f-wilayah').value) || null,
+      alamat: document.getElementById('f-alamat').value.trim() || null,
+      catatan: document.getElementById('f-catatan').value.trim() || null,
+      alias: document.getElementById('f-alias').value.split(',').map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean).join(', ') || null,
+      aktif: document.getElementById('f-aktif').checked,
+    };
+    if (!data.nama) return showToast('Nama vendor harus diisi', true);
+    if (!data.wilayah) return showToast('Wilayah harus diisi', true);
+    if (!data.barang) return showToast('Jenis barang harus diisi', true);
+    const old0 = editId ? vendors.find(x => x.id === editId) : null;
+    // nama lama otomatis jadi nama lain, biar riwayat PO lama tetap nyambung (data gudang tidak diubah)
+    if (old0 && norm(old0.nama) !== norm(data.nama)) data.alias = [data.alias, old0.nama].filter(Boolean).join(', ');
+    const dobel = vendors.find(x => x.id !== editId && namaVendor(data).some(n => namaVendor(x).includes(n)));
+    if (dobel) return showToast(`Nama ini sudah dipakai vendor "${dobel.nama}"`, true);
+
+    const old = editId ? vendors.find(x => x.id === editId) : null;
+    btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
+    try {
+      if (DEMO) {
+        if (old) Object.assign(old, data); else vendors.push({ id: Date.now(), ...data, created_at: new Date().toISOString() });
+      } else if (old) {
+        const { error } = await supabase.from('vendors').update(data).eq('id', editId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('vendors').insert(data);
+        if (error) throw error;
+      }
+      closeModal('m-form');
+      showToast(old ? '✓ Vendor diperbarui' : '✓ Vendor ditambahkan');
+      await loadAll();
+    } catch (e) {
+      console.error(e);
+      showToast('Gagal: ' + (e.message || e), true);
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 Simpan';
+    }
+  };
+
+  // gabungkan nama supplier dari PO ke vendor yang sudah ada (jadi nama lain)
+  async function gabung(id, nama) {
+    const v = vendors.find(x => x.id === id);
+    if (!confirm(`"${nama}" di PO gudang = vendor "${v.nama}"?`)) { render(); return; }
+    const alias = [v.alias, nama].filter(Boolean).join(', ');
+    try {
+      if (DEMO) v.alias = alias;
+      else { const { error } = await supabase.from('vendors').update({ alias }).eq('id', id); if (error) throw error; }
+      showToast(`✓ "${nama}" digabung ke ${v.nama}`);
+      await loadAll();
+    } catch (e) { showToast('Gagal: ' + e.message, true); render(); }
+  }
+
+  // ---------- detail riwayat ----------
+  function openDetail(id) {
+    const v = vendors.find(x => x.id === id);
+    const keys = namaVendor(v);
+    const list = pos.filter(p => keys.includes(norm(p.supplier))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const done = list.filter(p => p.status === 'received');
+    const total = done.reduce((a, p) => a + (p.amount || 0), 0);
+    const st = { pending: '⏳ Dipesan', arrived: '📦 Datang', received: '✓ Receive' };
+    document.getElementById('d-title').textContent = v.nama;
+    document.getElementById('d-body').innerHTML = `
+      <div class="ch-d">${esc(v.kategori)}${v.wilayah ? ' · 📍 ' + esc(v.wilayah) : ''}${v.no_wa ? ' · ' + esc(v.no_wa) : ''}${v.alamat ? ' · ' + esc(v.alamat) : ''}<br>
+      Total sudah receive: <b>${done.length} PO · ${formatRp(total)}</b></div>
+      ${list.length ? `<table><thead><tr><th>Tanggal</th><th>No. PO</th><th class="right">Nominal</th><th class="right">Status</th></tr></thead><tbody>
+        ${list.slice(0, 50).map(p => `<tr><td>${fmtTgl(p.received_at || p.created_at)}</td><td>${esc(p.po_number)}</td><td class="right">${formatRp(p.amount)}</td><td class="right">${st[p.status] || esc(p.status)}</td></tr>`).join('')}
+      </tbody></table>` : '<div class="empty">Belum pernah ada PO ke vendor ini.</div>'}`;
+    document.getElementById('m-detail').classList.add('show');
+  }
+
+  // ---------- data ----------
+  async function loadAll() {
+    if (DEMO) { render(); return; }
+    const [v, p] = await Promise.all([
+      supabase.from('vendors').select('*').order('nama'),
+      supabase.from('pos').select('id,po_number,supplier,amount,status,created_at,received_at'),
+    ]);
+    if (v.error) {
+      document.getElementById('list').innerHTML = `<div class="empty" style="grid-column:1/-1;color:#ef4444">Gagal memuat vendor: ${esc(v.error.message)}<br>Sudah jalankan setup-vendor.sql di Supabase?</div>`;
+      return;
+    }
+    vendors = v.data || []; pos = p.data || [];
+    render();
+  }
+
+  function demoData() {
+    const d = n => new Date(Date.now() - n * DAY).toISOString();
+    vendors = [
+      ['Toko Sinar Jaya', 'ATK', '081234567890', 'buku tulis, pulpen, map', 'Kediri'],
+      ['CV Maju Bersama', 'ATK', '085712345678', 'kertas hvs, amplop', 'Surabaya'],
+      ['Grosir Kediri Fashion', 'Fashion', '087812345678', 'kaos anak, celana jeans', 'Kediri'],
+      ['UD Berkah Tekstil', 'Fashion', '', 'seragam sekolah, kain', 'Solo'],
+      ['Toko Abadi', 'ATK & Fashion', '081122334455', 'tas sekolah, pulpen', 'Blitar'],
+      ['Sumber Rejeki', 'ATK', '082233445566', 'spidol, lem, penggaris', 'Surabaya'],
+      ['Butik Tanah Abang 88', 'Fashion', '089912345678', 'gamis brukat, gamis syari, hijab pashmina', 'Jakarta'],
+    ].map(([nama, kategori, no_wa, barang, wilayah], i) => ({ id: i + 1, nama, kategori, no_wa, barang, wilayah, aktif: true, catatan: i === 1 ? 'Harga murah kalau ambil rim' : null }));
+    const r = (sup, n, amt, st = 'received') => ({ id: Math.random(), po_number: 'PO-' + Math.floor(Math.random() * 9000 + 1000), supplier: sup, amount: amt, status: st, created_at: d(n + 2), received_at: st === 'received' ? d(n) : null });
+    pos = [
+      r('Toko Sinar Jaya', 2, 4500000), r('toko sinar jaya', 6, 3200000), r('Toko Sinar Jaya', 11, 5100000), r('Toko Sinar Jaya', 19, 2800000),
+      r('Grosir Kediri Fashion', 3, 7800000), r('Grosir Kediri Fashion', 15, 6100000), r('Grosir Kediri Fashion', 24, 5400000),
+      r('Toko Abadi', 8, 1200000), r('CV Maju Bersama', 48, 900000), r('UD Berkah Tekstil', 70, 2100000),
+      r('Toko Sinar Jaya', 1, 3000000, 'pending'), r('PT Nusantara Stationery', 9, 1500000), r('PT Nusantara Stationery', 30, 1100000),
+    ];
+  }
+
+  if (DEMO) {
+    document.getElementById('sub').textContent = 'MODE DEMO · data contoh, tidak tersimpan';
+    demoData(); render();
+  } else {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    await loadAll();
+    supabase.channel('vendor-page')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pos' }, loadAll)
+      .subscribe();
+    setInterval(loadAll, 30000);
+  }
+</script>
+</body>
+</html>
