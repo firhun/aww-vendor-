@@ -135,7 +135,7 @@
     <div class="ch-t">Daftar Vendor</div>
     <div class="ch-d">Data belanja dihitung otomatis dari PO yang sudah di-<b>receive</b> anak distribusi di Dashboard Gudang.</div>
     <div class="filters">
-      <input type="search" id="q" placeholder="🔍 Cari vendor / wilayah / barang...">
+      <input type="search" id="q" placeholder="🔍 Cari nama / lokasi / barang / nomor...">
       <select id="f-wil-filter" title="Wilayah"><option value="">📍 Semua wilayah</option></select>
       <select id="f-brg-filter" title="Jenis barang"><option value="">🏷️ Semua jenis barang</option></select>
       <select id="periode" title="Periode">
@@ -179,7 +179,7 @@
       <div><label>Wilayah *</label><input id="f-wilayah" list="dl-wilayah" maxlength="60" placeholder="Contoh: Jakarta" autocomplete="off"><datalist id="dl-wilayah"></datalist></div>
       <div><label>&nbsp;</label><div style="font-size:11px;color:#64748b;padding-top:6px">Kota/daerah vendor. Pilih yang sudah ada biar seragam.</div></div>
       <div class="full"><label>Jenis Barang *</label><input id="f-barang" maxlength="300" placeholder="Contoh: gamis brukat, gamis syari, hijab pashmina"><div style="font-size:11px;color:#64748b;margin-top:4px">Pisah pakai koma kalau lebih dari satu.</div></div>
-      <div class="full"><label>Alamat</label><input id="f-alamat" maxlength="200" placeholder="Opsional"></div>
+      <div class="full"><label>Lokasi / Alamat</label><input id="f-alamat" maxlength="200" placeholder="Contoh: PGMTA, Cipulir, atau alamat lengkap"></div>
       <div class="full"><label>Nama lain di PO gudang</label><input id="f-alias" maxlength="300" placeholder="Pisah koma. Contoh: sinar jaya, tk sinar jaya"><div style="font-size:11px;color:#64748b;margin-top:4px">Kalau anak gudang nulis nama vendor ini beda-beda, tulis variasinya di sini biar tetap kehitung.</div></div>
       <div class="full"><label>Catatan</label><textarea id="f-catatan" rows="2" maxlength="300" placeholder="Contoh: harga lebih murah ambil lusinan, tutup hari Jumat"></textarea></div>
       <div class="full" id="f-aktif-wrap"><label class="chk"><input type="checkbox" id="f-aktif" checked> Vendor masih aktif</label></div>
@@ -214,6 +214,7 @@
   let supabase = null;
   let vendors = [], pos = [];
   let fKat = 'semua', fStatus = 'semua', editId = null;
+  const PER_HAL = 40; let tampil = PER_HAL;
 
   // ---------- helper ----------
   const esc = s => s == null ? '' : String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
@@ -228,7 +229,14 @@
     const fw = document.getElementById('f-wil-filter'), fb = document.getElementById('f-brg-filter');
     const w0 = fw.value, b0 = fb.value;
     const brg = [...new Set(vendors.flatMap(v => splitBarang(v.barang)))].sort();
-    fw.innerHTML = '<option value="">📍 Semua wilayah</option>' + daftarWilayah().map(w => `<option ${w === w0 ? 'selected' : ''}>${esc(w)}</option>`).join('');
+    let opt = '<option value="">📍 Semua wilayah</option>';
+    for (const w of daftarWilayah()) {
+      opt += `<option value="${esc(w)}" ${w === w0 ? 'selected' : ''}>${esc(w)}</option>`;
+      const lok = {};
+      vendors.filter(v => v.wilayah === w && v.alamat && v.alamat.length <= 25).forEach(v => lok[v.alamat] = (lok[v.alamat] || 0) + 1);
+      Object.keys(lok).filter(a => lok[a] >= 2).sort().forEach(a => { const val = w + '|' + a; opt += `<option value="${esc(val)}" ${val === w0 ? 'selected' : ''}>&nbsp;&nbsp;└ ${esc(a)} (${lok[a]})</option>`; });
+    }
+    fw.innerHTML = opt;
     fb.innerHTML = '<option value="">🏷️ Semua jenis barang</option>' + brg.map(b => `<option ${b === b0 ? 'selected' : ''}>${esc(b)}</option>`).join('');
   }
   function cariVendor(supplier) { const k = norm(supplier); return vendors.find(v => namaVendor(v).includes(k)) || null; }
@@ -359,9 +367,9 @@
         if (fStatus === 'nganggur' && s.status !== 'nganggur') return false;
         if (fStatus === 'baru' && s.status !== 'baru') return false;
       }
-      if (fWil && s.v.wilayah !== fWil) return false;
+      if (fWil) { const [fw1, fa1] = fWil.split('|'); if (s.v.wilayah !== fw1 || (fa1 && s.v.alamat !== fa1)) return false; }
       if (fBrg && !splitBarang(s.v.barang).includes(fBrg)) return false;
-      if (q && !norm([s.v.nama, s.v.alias, s.v.barang, s.v.wilayah].join(' ')).includes(q)) return false;
+      if (q && !norm([s.v.nama, s.v.alias, s.v.barang, s.v.wilayah, s.v.alamat, s.v.no_wa].join(' ')).includes(q)) return false;
       return true;
     });
     const urut = document.getElementById('urut').value;
@@ -372,10 +380,12 @@
 
     const el = document.getElementById('list');
     if (!rows.length) { el.innerHTML = '<div class="empty" style="grid-column:1/-1">Tidak ada vendor yang cocok.</div>'; return; }
-    el.innerHTML = rows.map(s => {
+    const totalRows = rows.length;
+    rows = rows.slice(0, tampil);
+    el.innerHTML = `<div style="grid-column:1/-1;font-size:13px;color:#64748b">Menampilkan <b>${rows.length}</b> dari <b>${totalRows}</b> vendor</div>` + rows.map(s => {
       const v = s.v, [sc, sl] = STATUS[s.status], wa = waLink(v.no_wa);
       return `<div class="v ${v.aktif ? '' : 'off'}">
-        <div class="v-top"><div><div class="v-name">${esc(v.nama)}</div><div class="v-wil">📍 ${esc(v.wilayah || 'Wilayah belum diisi')}</div></div></div>
+        <div class="v-top"><div><div class="v-name">${esc(v.nama)}</div><div class="v-wil">📍 ${esc(v.wilayah || 'Wilayah belum diisi')}${v.alamat ? ' · ' + esc(v.alamat) : ''}</div></div></div>
         <div class="btags">${splitBarang(v.barang).map(b => `<span class="btag" data-brg="${esc(b)}">${esc(b)}</span>`).join('') || '<span class="v-barang">Jenis barang belum diisi</span>'}</div>
         <div class="tags"><span class="tag ${KAT[v.kategori] || 't-atk'}">${esc(v.kategori)}</span><span class="tag ${sc}">${sl}</span></div>
         <div class="v-stats">
@@ -390,8 +400,10 @@
           <button class="btn-s" data-edit="${v.id}" style="flex:0 0 auto">✏️</button>
         </div>
       </div>`;
-    }).join('');
-    el.querySelectorAll('[data-brg]').forEach(t => t.onclick = () => { document.getElementById('f-brg-filter').value = t.dataset.brg; render(); });
+    }).join('') + (totalRows > rows.length ? `<div style="grid-column:1/-1;text-align:center"><button class="btn ghost" id="btn-more">Tampilkan ${Math.min(PER_HAL, totalRows - rows.length)} lagi (sisa ${totalRows - rows.length})</button></div>` : '');
+    const more = document.getElementById('btn-more');
+    if (more) more.onclick = () => { tampil += PER_HAL; render(); };
+    el.querySelectorAll('[data-brg]').forEach(t => t.onclick = () => { document.getElementById('f-brg-filter').value = t.dataset.brg; tampil = PER_HAL; render(); });
     el.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openForm(+b.dataset.edit));
     el.querySelectorAll('[data-detail]').forEach(b => b.onclick = () => openDetail(+b.dataset.detail));
   }
@@ -401,13 +413,13 @@
     const box = document.getElementById(id);
     box.querySelectorAll('.chip').forEach(c => c.onclick = () => {
       box.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
-      c.classList.add('active'); set(c.dataset.v); render();
+      c.classList.add('active'); set(c.dataset.v); tampil = PER_HAL; render();
     });
   }
   bindChips('chips-kat', v => fKat = v);
   bindChips('chips-status', v => fStatus = v);
   window.setStatus = v => { document.querySelector(`#chips-status .chip[data-v="${v}"]`).click(); document.getElementById('list').scrollIntoView({ behavior: 'smooth' }); };
-  ['q', 'periode', 'urut', 'f-wil-filter', 'f-brg-filter'].forEach(id => document.getElementById(id).addEventListener('input', render));
+  ['q', 'periode', 'urut', 'f-wil-filter', 'f-brg-filter'].forEach(id => document.getElementById(id).addEventListener('input', () => { tampil = PER_HAL; render(); }));
 
   // ---------- form ----------
   window.openForm = function(id = null, namaAwal = '') {
