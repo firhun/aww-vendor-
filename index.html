@@ -200,6 +200,7 @@
   </div>
 </div>
 
+<datalist id="dl-vendor"></datalist>
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -220,7 +221,10 @@
   const esc = s => s == null ? '' : String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
   const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
   const DAY = 86400000;
-  const namaVendor = v => [v.nama, ...String(v.alias || '').split(',')].map(norm).filter(Boolean);
+  const normSup = s => norm(String(s || '').replace(/,/g, ' '));
+  const namaVendor = v => [v.nama, ...String(v.alias || '').split(',')].map(normSup).filter(Boolean);
+  let petaNama = new Map(); // nama/alias (dinormalisasi) -> vendor, dibangun ulang tiap data dimuat
+  function bangunPeta() { petaNama = new Map(); for (const v of vendors) for (const n of namaVendor(v)) if (!petaNama.has(n)) petaNama.set(n, v); }
   const splitBarang = s => String(s || '').split(',').map(x => x.replace(/\s+/g, ' ').trim().toLowerCase()).filter(Boolean);
   // pakai penulisan wilayah yang sudah ada kalau sama (jakarta = Jakarta)
   const rapiWilayah = w => { w = String(w || '').replace(/\s+/g, ' ').trim(); if (!w) return ''; const ada = daftarWilayah().find(x => norm(x) === norm(w)); return ada || w.replace(/\b\w/g, c => c.toUpperCase()); };
@@ -239,7 +243,7 @@
     fw.innerHTML = opt;
     fb.innerHTML = '<option value="">🏷️ Semua jenis barang</option>' + brg.map(b => `<option ${b === b0 ? 'selected' : ''}>${esc(b)}</option>`).join('');
   }
-  function cariVendor(supplier) { const k = norm(supplier); return vendors.find(v => namaVendor(v).includes(k)) || null; }
+  function cariVendor(supplier) { return petaNama.get(normSup(supplier)) || null; }
   function formatRp(n) {
     if (!n) return 'Rp 0';
     if (n >= 1e9) return 'Rp ' + (n/1e9).toFixed(2).replace(/\.?0+$/, '') + ' M';
@@ -283,7 +287,7 @@
     for (const v of vendors) map[v.id] = { v, all: [], recent: [], nominal: 0 };
     const unreg = {};
     for (const p of receivedPOs()) {
-      const key = norm(p.supplier);
+      const key = normSup(p.supplier);
       const vv = cariVendor(p.supplier);
       const s = vv ? map[vv.id] : null;
       if (!s) { (unreg[key] ||= { nama: p.supplier, n: 0, nominal: 0, last: p.tgl }); unreg[key].n++; unreg[key].nominal += p.amount || 0; if (p.tgl > unreg[key].last) unreg[key].last = p.tgl; continue; }
@@ -345,14 +349,21 @@
     const ub = document.getElementById('unreg-box');
     if (unreg.length) {
       unreg.sort((a, b) => b.n - a.n);
+      document.getElementById('dl-vendor').innerHTML = [...vendors].sort((a, b) => a.nama.localeCompare(b.nama)).map(v => `<option value="${esc(v.nama)}"></option>`).join('');
+      const unregTampil = unreg.slice(0, 30);
       ub.innerHTML = `<div class="card"><div class="ch-t">Supplier di PO yang belum terdaftar (${unreg.length})</div>
         <div class="ch-d">Nama ini ada di Dashboard Gudang tapi belum ada di Data Vendor. Daftarkan sebagai vendor baru, atau kalau ternyata vendor yang sudah ada tapi beda penulisan, pilih <b>Sama dengan vendor...</b></div>
-        ${unreg.map(u => `<div class="unreg"><div><b>${esc(u.nama)}</b><small>${u.n} PO · ${formatRp(u.nominal)} · terakhir ${lalu(u.last)}</small></div>
+        ${unregTampil.map(u => `<div class="unreg"><div><b>${esc(u.nama)}</b><small>${u.n} PO · ${formatRp(u.nominal)} · terakhir ${lalu(u.last)}</small></div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-            ${vendors.length ? `<select class="gabung" data-nama="${esc(u.nama)}" style="width:auto;padding:6px 8px;font-size:12px"><option value="">Sama dengan vendor...</option>${[...vendors].sort((a,b)=>a.nama.localeCompare(b.nama)).map(v => `<option value="${v.id}">${esc(v.nama)}</option>`).join('')}</select>` : ''}
-            <button class="btn mini" data-nama="${esc(u.nama)}">+ Daftarkan baru</button></div></div>`).join('')}</div>`;
+            ${vendors.length ? `<input class="gabung" list="dl-vendor" data-nama="${esc(u.nama)}" placeholder="Sama dengan vendor..." style="width:200px;padding:6px 8px;font-size:12px"><button class="btn mini ghost" data-gabung="${esc(u.nama)}">Gabung</button>` : ''}
+            <button class="btn mini" data-nama="${esc(u.nama)}">+ Daftarkan baru</button></div></div>`).join('')}${unreg.length > 30 ? `<div class="ch-d" style="margin:10px 0 0">+${unreg.length - 30} lainnya muncul setelah yang di atas diselesaikan.</div>` : ''}</div>`;
       ub.querySelectorAll('button[data-nama]').forEach(b => b.onclick = () => openForm(null, b.dataset.nama));
-      ub.querySelectorAll('select.gabung').forEach(sel => sel.onchange = () => sel.value && gabung(+sel.value, sel.dataset.nama));
+      ub.querySelectorAll('button[data-gabung]').forEach(b => b.onclick = () => {
+        const inp = b.previousElementSibling, pilih = norm(inp.value);
+        const v = vendors.find(x => norm(x.nama) === pilih);
+        if (!v) return showToast('Pilih nama vendor dari daftar yang muncul saat mengetik', true);
+        gabung(v.id, b.dataset.gabung);
+      });
     } else ub.innerHTML = '';
 
     // daftar vendor
@@ -419,7 +430,10 @@
   bindChips('chips-kat', v => fKat = v);
   bindChips('chips-status', v => fStatus = v);
   window.setStatus = v => { document.querySelector(`#chips-status .chip[data-v="${v}"]`).click(); document.getElementById('list').scrollIntoView({ behavior: 'smooth' }); };
-  ['q', 'periode', 'urut', 'f-wil-filter', 'f-brg-filter'].forEach(id => document.getElementById(id).addEventListener('input', () => { tampil = PER_HAL; render(); }));
+  let jedaCari = null;
+  ['q', 'periode', 'urut', 'f-wil-filter', 'f-brg-filter'].forEach(id => document.getElementById(id).addEventListener('input', () => {
+    tampil = PER_HAL; clearTimeout(jedaCari); jedaCari = setTimeout(render, id === 'q' ? 250 : 0);
+  }));
 
   // ---------- form ----------
   window.openForm = function(id = null, namaAwal = '') {
@@ -455,8 +469,8 @@
       aktif: document.getElementById('f-aktif').checked,
     };
     if (!data.nama) return showToast('Nama vendor harus diisi', true);
-    if (!data.wilayah) return showToast('Wilayah harus diisi', true);
-    if (!data.barang) return showToast('Jenis barang harus diisi', true);
+    if (!editId && !data.wilayah) return showToast('Wilayah harus diisi', true);
+    if (!editId && !data.barang) return showToast('Jenis barang harus diisi', true);
     const old0 = editId ? vendors.find(x => x.id === editId) : null;
     // nama lama otomatis jadi nama lain, biar riwayat PO lama tetap nyambung (data gudang tidak diubah)
     if (old0 && norm(old0.nama) !== norm(data.nama)) data.alias = [data.alias, old0.nama].filter(Boolean).join(', ');
@@ -490,7 +504,7 @@
   async function gabung(id, nama) {
     const v = vendors.find(x => x.id === id);
     if (!confirm(`"${nama}" di PO gudang = vendor "${v.nama}"?`)) { render(); return; }
-    const alias = [v.alias, nama].filter(Boolean).join(', ');
+    const alias = [v.alias, String(nama).replace(/,/g, ' ').replace(/\s+/g, ' ').trim()].filter(Boolean).join(', ');
     try {
       if (DEMO) v.alias = alias;
       else { const { error } = await supabase.from('vendors').update({ alias }).eq('id', id); if (error) throw error; }
@@ -503,7 +517,7 @@
   function openDetail(id) {
     const v = vendors.find(x => x.id === id);
     const keys = namaVendor(v);
-    const list = pos.filter(p => keys.includes(norm(p.supplier))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const list = pos.filter(p => keys.includes(normSup(p.supplier))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     const done = list.filter(p => p.status === 'received');
     const total = done.reduce((a, p) => a + (p.amount || 0), 0);
     const st = { pending: '⏳ Dipesan', arrived: '📦 Datang', received: '✓ Receive' };
@@ -518,19 +532,41 @@
   }
 
   // ---------- data ----------
-  async function loadAll() {
-    if (DEMO) { render(); return; }
-    const [v, p] = await Promise.all([
-      supabase.from('vendors').select('*').order('nama'),
-      supabase.from('pos').select('id,po_number,supplier,amount,status,created_at,received_at'),
-    ]);
-    if (v.error) {
-      document.getElementById('list').innerHTML = `<div class="empty" style="grid-column:1/-1;color:#ef4444">Gagal memuat vendor: ${esc(v.error.message)}<br>Sudah jalankan setup-vendor.sql di Supabase?</div>`;
-      return;
+  // Supabase cuma kasih maksimal 1000 baris sekali ambil, jadi diambil per 1000 sampai habis
+  async function ambilSemua(tabel, kolom) {
+    const hasil = [];
+    for (let dari = 0; ; dari += 1000) {
+      const { data, error } = await supabase.from(tabel).select(kolom).order('id').range(dari, dari + 999);
+      if (error) return { error };
+      hasil.push(...data);
+      if (data.length < 1000) return { data: hasil };
     }
-    vendors = v.data || []; pos = p.data || [];
-    render();
   }
+  let tandaData = '', loading = false;
+  async function loadAll() {
+    if (DEMO) { bangunPeta(); render(); return; }
+    if (loading) return;
+    loading = true;
+    try {
+      const [v, p] = await Promise.all([
+        ambilSemua('vendors', '*'),
+        ambilSemua('pos', 'id,po_number,supplier,amount,status,created_at,received_at'),
+      ]);
+      if (v.error) {
+        document.getElementById('list').innerHTML = `<div class="empty" style="grid-column:1/-1;color:#ef4444">Gagal memuat vendor: ${esc(v.error.message)}<br>Cek internet, lalu refresh halaman.</div>`;
+        return;
+      }
+      if (p.error) showToast('Data PO gudang gagal dimuat: ' + p.error.message, true);
+      const tanda = JSON.stringify([v.data, p.data || []]);
+      if (tanda === tandaData) return; // tidak ada perubahan, tidak perlu gambar ulang
+      tandaData = tanda;
+      vendors = v.data; pos = p.data || pos;
+      bangunPeta();
+      render();
+    } finally { loading = false; }
+  }
+  let jedaMuat = null;
+  const muatNanti = () => { clearTimeout(jedaMuat); jedaMuat = setTimeout(loadAll, 3000); };
 
   function demoData() {
     const d = n => new Date(Date.now() - n * DAY).toISOString();
@@ -554,16 +590,18 @@
 
   if (DEMO) {
     document.getElementById('sub').textContent = 'MODE DEMO · data contoh, tidak tersimpan';
-    demoData(); render();
+    demoData(); bangunPeta(); render();
   } else {
     const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
     supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     await loadAll();
     supabase.channel('vendor-page')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, loadAll)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pos' }, loadAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, muatNanti)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pos' }, muatNanti)
       .subscribe();
-    setInterval(loadAll, 30000);
+    // cadangan kalau realtime putus: cek tiap 5 menit, dan saat tab dibuka lagi
+    setInterval(() => { if (!document.hidden) loadAll(); }, 300000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadAll(); });
   }
 </script>
 </body>
